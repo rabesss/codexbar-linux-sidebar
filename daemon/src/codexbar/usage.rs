@@ -72,8 +72,7 @@ pub async fn collect_usage(
         result.stderr.trim()
     );
 
-    // We need to know which providers are enabled. Try codexbar config dump.
-    let providers = discover_providers(program, timeout_secs).await;
+    let providers = merged_provider_list(program, timeout_secs).await;
 
     let mut per_provider = Vec::new();
     for provider_id in &providers {
@@ -128,6 +127,17 @@ pub async fn collect_usage(
         command_result: result,
         aggregate_succeeded: false,
     }
+}
+
+/// Merge enabled providers from config dump with a Linux-safe fallback list.
+async fn merged_provider_list(program: &str, timeout_secs: u64) -> Vec<String> {
+    let mut providers = discover_providers(program, timeout_secs).await;
+    for id in fallback_providers() {
+        if !providers.iter().any(|p| p == &id) {
+            providers.push(id);
+        }
+    }
+    providers
 }
 
 /// Discover enabled providers from `codexbar config dump`.

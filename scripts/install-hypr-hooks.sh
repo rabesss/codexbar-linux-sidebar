@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Inject or remove managed Hyprland autostart/keybind blocks for codexbar-linux-sidebar.
+# Inject or remove Hyprland hooks for codexbar-linux-sidebar.
 set -euo pipefail
 
-MODE="${1:-install}"
+MODE="${1:-install-ii}"
 EXECS_FILE="$HOME/.config/hypr/custom/execs.lua"
 KEYBINDS_FILE="$HOME/.config/hypr/custom/keybinds.lua"
 RULES_FILE="$HOME/.config/hypr/custom/rules.lua"
@@ -29,71 +29,45 @@ Path(path).write_text(text[:start] + text[stop:])
 PY
 }
 
-install_block() {
-  local file="$1"
-  shift
-  remove_block "$file"
-  mkdir -p "$(dirname "$file")"
-  touch "$file"
+install_ii_hooks() {
+  remove_block "$EXECS_FILE"
+  remove_block "$KEYBINDS_FILE"
+  remove_block "$RULES_FILE"
+
   {
-    cat "$file"
-    [[ -s "$file" ]] && printf '\n'
-    printf '%s\n' "$MARK_BEGIN"
-    cat
-    printf '%s\n' "$MARK_END"
-  } <<'EOF' >"${file}.tmp"
-EOF
-  mv "${file}.tmp" "$file"
+    [[ -f "$EXECS_FILE" ]] && cat "$EXECS_FILE"
+    [[ -s "$EXECS_FILE" ]] && printf '\n'
+    echo "$MARK_BEGIN"
+    cat <<'LUA'
+hl.on("hyprland.start", function()
+    hl.exec_cmd("~/.local/bin/codexbar-sidebarctl start")
+end)
+LUA
+    echo "$MARK_END"
+  } >"${EXECS_FILE}.tmp" && mv "${EXECS_FILE}.tmp" "$EXECS_FILE"
+
+  {
+    [[ -f "$KEYBINDS_FILE" ]] && cat "$KEYBINDS_FILE"
+    [[ -s "$KEYBINDS_FILE" ]] && printf '\n'
+    echo "$MARK_BEGIN"
+    cat <<'LUA'
+hl.bind("CTRL + SUPER + SHIFT + U", hl.dsp.exec_cmd("~/.local/bin/codexbar-sidebarctl refresh"), {
+    description = "CodexBar: Refresh provider usage data"
+})
+LUA
+    echo "$MARK_END"
+  } >"${KEYBINDS_FILE}.tmp" && mv "${KEYBINDS_FILE}.tmp" "$KEYBINDS_FILE"
+
+  echo "Installed ii integration Hypr hooks (daemon autostart + refresh keybind)"
 }
 
 case "$MODE" in
+  install-ii)
+    install_ii_hooks
+    ;;
   install)
-    remove_block "$EXECS_FILE"
-    remove_block "$KEYBINDS_FILE"
-    remove_block "$RULES_FILE"
-
-    {
-      [[ -f "$EXECS_FILE" ]] && cat "$EXECS_FILE"
-      [[ -s "$EXECS_FILE" ]] && printf '\n'
-      echo "$MARK_BEGIN"
-      cat <<'LUA'
-hl.on("hyprland.start", function()
-    hl.exec_cmd("~/.local/bin/codexbar-sidebar autostart")
-end)
-LUA
-      echo "$MARK_END"
-    } >"${EXECS_FILE}.tmp"
-    mv "${EXECS_FILE}.tmp" "$EXECS_FILE"
-
-    {
-      [[ -f "$KEYBINDS_FILE" ]] && cat "$KEYBINDS_FILE"
-      [[ -s "$KEYBINDS_FILE" ]] && printf '\n'
-      echo "$MARK_BEGIN"
-      cat <<'LUA'
-hl.bind("CTRL + SUPER + U", hl.dsp.exec_cmd("~/.local/bin/codexbar-sidebar toggle"), {
-    description = "CodexBar sidebar: Toggle usage panel"
-})
-hl.bind("CTRL + SUPER + SHIFT + U", hl.dsp.exec_cmd("~/.local/bin/codexbar-sidebar refresh"), {
-    description = "CodexBar sidebar: Refresh provider data"
-})
-LUA
-      echo "$MARK_END"
-    } >"${KEYBINDS_FILE}.tmp"
-    mv "${KEYBINDS_FILE}.tmp" "$KEYBINDS_FILE"
-
-    {
-      [[ -f "$RULES_FILE" ]] && cat "$RULES_FILE"
-      [[ -s "$RULES_FILE" ]] && printf '\n'
-      echo "$MARK_BEGIN"
-      cat <<'LUA'
-hl.layerrule("blur", "codexbar-sidebar")
-hl.layerrule("ignore_alpha 0.05", "codexbar-sidebar")
-LUA
-      echo "$MARK_END"
-    } >"${RULES_FILE}.tmp"
-    mv "${RULES_FILE}.tmp" "$RULES_FILE"
-
-    echo "Installed Hyprland hooks in custom/{execs,keybinds,rules}.lua"
+    echo "Standalone panel install is deprecated. Use: $0 install-ii" >&2
+    exit 2
     ;;
   remove)
     remove_block "$EXECS_FILE"
@@ -102,7 +76,7 @@ LUA
     echo "Removed Hyprland hooks"
     ;;
   *)
-    echo "usage: $0 [install|remove]" >&2
+    echo "usage: $0 [install-ii|remove]" >&2
     exit 2
     ;;
 esac

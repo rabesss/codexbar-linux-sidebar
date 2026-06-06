@@ -1,7 +1,9 @@
 import QtQuick
+import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
+import Quickshell.Wayland
 import "widgets"
 
 // CodexBar Linux Sidebar — standalone Quickshell left panel
@@ -9,6 +11,11 @@ import "widgets"
 
 Scope {
   id: root
+
+  readonly property string scriptPath: Quickshell.env("HOME") + "/.local/bin/codexbar-sidebar"
+  readonly property string visibilityStatePath: Quickshell.env("HOME") + "/.local/state/codexbar-sidebar/state"
+
+  property bool panelVisible: true
 
   // --- State properties (populated from state.json) ---
   property var providers: []
@@ -18,16 +25,33 @@ Scope {
   property bool hasData: false
   property bool loading: true
 
-  // --- Data source: reads $XDG_RUNTIME_DIR/codexbar-sidebar/state.json ---
-  // Primary: FileView with watchChanges
-  // Fallback: Timer polling every 5s
-
   property string statePath: {
-    var runtimeDir = Env.get("XDG_RUNTIME_DIR") || ("/run/user/" + (Env.get("UID") || "1000"));
+    var runtimeDir = Quickshell.env("XDG_RUNTIME_DIR") || ("/run/user/" + (Quickshell.env("UID") || "1000"));
     return runtimeDir + "/codexbar-sidebar/state.json";
   }
 
   property double lastFileEventMs: 0
+
+  function parseVisibilityState() {
+    if (!visibilityFile.loaded) return;
+    const lines = visibilityFile.text().split("\n");
+    for (const line of lines) {
+      if (line.startsWith("visible=")) {
+        root.panelVisible = line.slice("visible=".length) === "1";
+      }
+    }
+  }
+
+  function setPanelVisible(value) {
+    root.panelVisible = value;
+    Quickshell.execDetached([root.scriptPath, "visible", value ? "on" : "off"]);
+  }
+
+  FileView {
+    id: visibilityFile
+    path: root.visibilityStatePath
+    onLoadedChanged: root.parseVisibilityState()
+  }
 
   FileView {
     id: stateFile
@@ -49,7 +73,8 @@ Scope {
     repeat: true
     running: true
     onTriggered: {
-      // Fallback: re-read if FileView didn't fire
+      visibilityFile.reload();
+      root.parseVisibilityState();
       if (Date.now() - root.lastFileEventMs > 5000) {
         stateFile.reload();
       }
@@ -78,20 +103,11 @@ Scope {
     }
   }
 
-  // --- Environment variable helper ---
-  property QtObject envHelper: QtObject {
-    function get(name) {
-      // Quickshell doesn't expose env vars directly in QML
-      // We use a Process to read it on startup
-      return "";
-    }
-  }
-
-  // Bootstrap: run once on startup to discover XDG_RUNTIME_DIR
+  // Bootstrap: discover XDG_RUNTIME_DIR if not set in environment
   Process {
     id: envProbe
     command: ["sh", "-c", 'echo "$XDG_RUNTIME_DIR"']
-    running: true
+    running: Quickshell.env("XDG_RUNTIME_DIR") === undefined || Quickshell.env("XDG_RUNTIME_DIR") === ""
     stdout: StdioCollector {
       onStreamFinished: {
         var dir = text.trim();
@@ -106,14 +122,19 @@ Scope {
 
   // --- UI ---
   PanelWindow {
+    id: sidebarWindow
+    visible: root.panelVisible
     anchors {
       left: true
       top: true
       bottom: true
     }
     width: 430
-    exclusiveZone: 430
+    exclusiveZone: root.panelVisible ? 430 : 0
     aboveWindows: true
+
+    WlrLayershell.namespace: "codexbar-sidebar"
+    WlrLayershell.layer: WlrLayer.Top
 
     Rectangle {
       anchors.fill: parent
@@ -197,12 +218,15 @@ Scope {
         }
 
         // Provider list
-        ScrollView {
+        Flickable {
           Layout.fillWidth: true
           Layout.fillHeight: true
           clip: true
+          contentWidth: width
+          contentHeight: providerColumn.implicitHeight
 
           ColumnLayout {
+            id: providerColumn
             width: parent.width
             spacing: 8
 
@@ -255,6 +279,27 @@ Scope {
           }
         }
       }
+    }
+  }
+
+  IpcHandler {
+    target: "codexbarSidebar"
+
+    function toggle(): void {
+      root.setPanelVisible(!root.panelVisible)
+    }
+
+    function show(): void {
+      root.setPanelVisible(true)
+    }
+
+    function hide(): void {
+      root.setPanelVisible(false)
+    }
+
+    function refresh(): void {
+      stateFile.reload()
+      Quickshell.execDetached([root.scriptPath, "refresh"])
     }
   }
 

@@ -1,0 +1,142 @@
+#!/usr/bin/env bash
+# User-facing launcher for the CodexBar Linux sidebar Quickshell panel.
+set -euo pipefail
+
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/codexbar-sidebar"
+STATE_FILE="$STATE_DIR/state"
+LOCK_FILE="$STATE_DIR/lock"
+QS_PATH="${CODEXBAR_SIDEBAR_QS_PATH:-$HOME/.local/share/codexbar-linux-sidebar/quickshell}"
+SIDEBARCTL="${CODEXBAR_SIDEBARCTL:-$HOME/.local/bin/codexbar-sidebarctl}"
+
+ensure_state_dir() {
+  mkdir -p "$STATE_DIR"
+}
+
+load_state() {
+  ensure_state_dir
+  if [[ ! -f "$STATE_FILE" ]]; then
+    visible=1
+    write_state
+    return
+  fi
+  # shellcheck disable=SC1090
+  . "$STATE_FILE"
+  visible="${visible:-1}"
+}
+
+write_state() {
+  ensure_state_dir
+  local tmp
+  tmp="$(mktemp "$STATE_DIR/state.XXXXXX")"
+  printf 'visible=%s\n' "$visible" >"$tmp"
+  mv "$tmp" "$STATE_FILE"
+}
+
+with_lock() {
+  ensure_state_dir
+  exec 9>"$LOCK_FILE"
+  flock 9
+  load_state
+  "$@"
+}
+
+launch_shell() {
+  if [[ ! -d "$QS_PATH" ]]; then
+    echo "Quickshell bundle not found at $QS_PATH" >&2
+    echo "Run: ./scripts/install.sh" >&2
+    exit 1
+  fi
+  (exec 9>&-; qs --path "$QS_PATH" -n -d >/dev/null 2>&1) || true
+}
+
+cmd_status() {
+  printf 'visible=%s\n' "$visible"
+  printf 'qs_path=%s\n' "$QS_PATH"
+  if [[ -x "$SIDEBARCTL" ]]; then
+    "$SIDEBARCTL" status || true
+  fi
+}
+
+cmd_visible() {
+  case "${1:-toggle}" in
+    1|on|show|true) visible=1 ;;
+    0|off|hide|false) visible=0 ;;
+    toggle) visible=$((1 - visible)) ;;
+    *) printf 'usage: codexbar-sidebar visible [on|off|toggle]\n' >&2; exit 2 ;;
+  esac
+  write_state
+}
+
+cmd_autostart() {
+  write_state
+  if [[ -x "$SIDEBARCTL" ]]; then
+    "$SIDEBARCTL" start || true
+  fi
+  launch_shell
+}
+
+cmd_toggle() {
+  cmd_visible toggle
+  launch_shell
+}
+
+cmd_refresh() {
+  if [[ -x "$SIDEBARCTL" ]]; then
+    "$SIDEBARCTL" refresh
+  else
+    echo "codexbar-sidebarctl not installed" >&2
+    exit 1
+  fi
+}
+
+cmd_doctor() {
+  local ok=0
+  for bin in codexbar codexbar-sidebard codexbar-sidebarctl qs; do
+    if command -v "$bin" >/dev/null 2>&1; then
+      printf '[ok] %s -> %s\n' "$bin" "$(command -v "$bin")"
+    else
+      printf '[missing] %s\n' "$bin" >&2
+      ok=1
+    fi
+  done
+  [[ -d "$QS_PATH" ]] && printf '[ok] quickshell bundle: %s\n' "$QS_PATH" || { printf '[missing] quickshell bundle\n' >&2; ok=1; }
+  local runtime="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+  local state_json="$runtime/codexbar-sidebar/state.json"
+  if [[ -f "$state_json" ]]; then
+    printf '[ok] state.json (%s bytes)\n' "$(wc -c <"$state_json")"
+  else
+    printf '[warn] no state.json yet at %s\n' "$state_json"
+  fi
+  return "$ok"
+}
+
+main_locked() {
+  case "${1:-status}" in
+    status) cmd_status ;;
+    launch) launch_shell ;;
+    autostart) cmd_autostart ;;
+    show) cmd_visible on; launch_shell ;;
+    hide) cmd_visible off; launch_shell ;;
+    visible) shift; cmd_visible "${1:-toggle}" ;;
+    toggle) cmd_toggle ;;
+    refresh) cmd_refresh ;;
+    doctor) cmd_doctor ;;
+    *)
+      cat >&2 <<'USAGE'
+usage: codexbar-sidebar <command>
+
+commands:
+  autostart    start daemon + Quickshell panel (Hyprland exec-once)
+  toggle       show/hide panel and relaunch Quickshell
+  show|hide    persist visibility
+  refresh      trigger daemon poll cycle
+  status       print visibility + daemon summary
+  doctor       check binaries, bundle, and state file
+  launch       start Quickshell panel only
+USAGE
+      exit 2
+      ;;
+  esac
+}
+
+with_lock main_locked "$@"

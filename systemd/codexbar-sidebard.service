@@ -1,0 +1,15 @@
+[Unit]
+Description=CodexBar Linux Sidebar Daemon
+Documentation=https://github.com/steipete/CodexBar
+After=network-online.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/codexbar-sidebard
+ExecReload=%h/.local/bin/codexbar-sidebard --once
+Restart=on-failure
+RestartSec=10
+Environment=XDG_RUNTIME_DIR=%t
+
+[Install]
+WantedBy=default.target

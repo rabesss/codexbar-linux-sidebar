@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-06-06T10:30:00Z",
+  "codexbar": {
+    "available": true,
+    "version": "0.32.4",
+    "usage_command": ["codexbar", "--provider", "all", "--format", "json", "--json-only", "--status"],
+    "cost_command": ["codexbar", "cost", "--format", "json", "--json-only"],
+    "refresh_interval_seconds": 60,
+    "aggregate_succeeded": true
+  },
+  "providers": [
+    {
+      "id": "codex",
+      "name": "Codex",
+      "enabled": true,
+      "platform_state": "supported",
+      "unsupported_reason": null,
+      "status": { "level": "ok", "indicator": "none", "description": "Operational", "updated_at": "2026-06-06T10:29:00Z" },
+      "usage": {
+        "primary": { "used_percent": 28, "remaining_percent": 72, "window_minutes": 300, "reset_at": "2026-06-06T12:00:00Z", "reset_label": "1h 12m", "display_label": "72% left" },
+        "secondary": { "used_percent": 59, "remaining_percent": 41, "window_minutes": 10080, "reset_at": "2026-06-07T09:00:00Z", "reset_label": "Fri at 9:00 AM", "display_label": "41% left" },
+        "tertiary": null,
+        "updated_at": "2026-06-06T10:29:41Z"
+      },
+      "credits": { "remaining": 112.4, "currency": null, "updated_at": "2026-06-06T10:29:41Z" },
+      "cost": { "session_cost_usd": 1.23, "last_30_days_cost_usd": 45.67, "total_tokens": 123456, "total_cost_usd": 45.67, "updated_at": "2026-06-06T10:29:41Z" },
+      "auth": { "source": "openai-web", "state": "authenticated", "message": null },
+      "stale": false,
+      "last_updated": "2026-06-06T10:29:41Z",
+      "raw": { "usage": {}, "cost": {} }
+    },
+    {
+      "id": "claude",
+      "name": "Claude",
+      "enabled": true,
+      "platform_state": "supported",
+      "unsupported_reason": null,
+      "status": { "level": "ok", "indicator": "none", "description": "Operational", "updated_at": "2026-06-06T10:29:00Z" },
+      "usage": {
+        "primary": { "used_percent": 54, "remaining_percent": 46, "window_minutes": 10080, "reset_at": "2026-06-10T09:00:00Z", "reset_label": "weekly reset Wed", "display_label": "46% left" },
+        "secondary": null,
+        "tertiary": null,
+        "updated_at": "2026-06-06T10:29:41Z"
+      },
+      "credits": null,
+      "cost": { "session_cost_usd": 4.56, "last_30_days_cost_usd": 89.01, "total_tokens": 789012, "total_cost_usd": 89.01, "updated_at": "2026-06-06T10:29:41Z" },
+      "auth": { "source": "oauth", "state": "authenticated", "message": null },
+      "stale": false,
+      "last_updated": "2026-06-06T10:29:41Z",
+      "raw": { "usage": {}, "cost": {} }
+    },
+    {
+      "id": "cursor",
+      "name": "Cursor",
+      "enabled": true,
+      "platform_state": "supported",
+      "unsupported_reason": null,
+      "status": { "level": "warn", "indicator": "minor", "description": "Auth required", "updated_at": "2026-06-06T08:00:00Z" },
+      "usage": null,
+      "credits": null,
+      "cost": null,
+      "auth": { "source": "browser", "state": "auth_required", "message": "Cookie/auth needed. Run codexbar config set-api-key or enable browser cookie import." },
+      "stale": true,
+      "last_updated": "2026-06-06T08:00:00Z",
+      "raw": { "usage": {}, "cost": null }
+    },
+    {
+      "id": "openrouter",
+      "name": "OpenRouter",
+      "enabled": true,
+      "platform_state": "supported",
+      "unsupported_reason": null,
+      "status": { "level": "ok", "indicator": "none", "description": "Operational", "updated_at": "2026-06-06T10:29:00Z" },
+      "usage": null,
+      "credits": { "remaining": 3.41, "currency": "USD", "updated_at": "2026-06-06T10:29:41Z" },
+      "cost": null,
+      "auth": { "source": "api", "state": "authenticated", "message": null },
+      "stale": false,
+      "last_updated": "2026-06-06T10:29:41Z",
+      "raw": { "usage": {}, "cost": null }
+    },
+    {
+      "id": "gemini",
+      "name": "Gemini",
+      "enabled": true,
+      "platform_state": "unsupported",
+      "unsupported_reason": "Provider requires web-backed source not available in Linux CLI",
+      "status": { "level": "unsupported", "indicator": null, "description": "Not available on Linux", "updated_at": null },
+      "usage": null,
+      "credits": null,
+      "cost": null,
+      "auth": { "source": null, "state": "unsupported_on_linux", "message": "Provider requires web-backed source not available in Linux CLI" },
+      "stale": false,
+      "last_updated": null,
+      "raw": { "usage": null, "cost": null }
+    },
+    {
+      "id": "minimax",
+      "name": "MiniMax",
+      "enabled": true,
+      "platform_state": "supported",
+      "unsupported_reason": null,
+      "status": { "level": "ok", "indicator": "none", "description": "Operational", "updated_at": "2026-06-06T10:29:00Z" },
+      "usage": {
+        "primary": { "used_percent": 22, "remaining_percent": 78, "window_minutes": 43200, "reset_at": "2026-07-01T00:00:00Z", "reset_label": "monthly window", "display_label": "78% left" },
+        "secondary": null,
+        "tertiary": null,
+        "updated_at": "2026-06-06T10:29:41Z"
+      },
+      "credits": null,
+      "cost": null,
+      "auth": { "source": "api", "state": "authenticated", "message": null },
+      "stale": false,
+      "last_updated": "2026-06-06T10:29:41Z",
+      "raw": { "usage": {}, "cost": null }
+    }
+  ],
+  "errors": [
+    {
+      "scope": "usage",
+      "provider": "cursor",
+      "level": "warn",
+      "kind": "auth_required",
+      "command": ["codexbar", "--provider", "cursor", "--format", "json", "--json-only"],
+      "exit_code": 2,
+      "message": "Cookie/auth needed for Cursor. See codexbar docs.",
+      "raw": {}
+    }
+  ]
+}

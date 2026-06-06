@@ -1,0 +1,29 @@
+[ui]
+position = "left"
+width = 430
+poll_ms = 2000
+
+[codexbar]
+command = "codexbar"
+config_path = "~/.codexbar/config.json"
+poll_seconds = 60
+show_disabled_providers = false
+show_stale_data = true
+show_errors = true
+
+[codexbar.cost]
+enabled = true
+days = 30
+failure_mode = "warn"
+
+[display]
+show_usage_bars = true
+show_reset_countdowns = true
+show_spend = true
+show_credit_balance = true
+show_provider_status = true
+show_last_updated = true
+
+[mock]
+enabled = false
+num_providers = 6

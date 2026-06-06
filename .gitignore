@@ -1,0 +1,19 @@
+# Rust
+/target/
+**/*.rs.bk
+
+# IDE
+.idea/
+.vscode/
+
+# Local runtime
+*.log
+.env
+
+# Packaging artifacts
+/pkg/
+/src/
+*.pkg.tar.zst
+
+# CodexBar CLI download cache (never commit upstream binaries)
+/vendor/codexbar-cli/
